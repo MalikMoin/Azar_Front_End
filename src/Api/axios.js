@@ -43,7 +43,7 @@ import axios from 'axios';
 import { authService } from './auth.api';
 
 export const publicAxios = axios.create({
-baseURL: import.meta.env.VITE_BACKEND_URLS || import.meta.env.VITE_BACKEND_URL,
+baseURL: import.meta.env.VITE_BACKEND_AUTH_URL || 'http://localhost:8000',
 
   headers: { 'Content-Type': 'application/json' },
 });

@@ -73,6 +73,7 @@ export default function Sidebar({ isOpen, toggleSidebar, isMobile }) {
   const displayName = userData?.fullname || 
                       userData?.full_name || 
                       userData?.username || 
+                      userData?.picture ||
                       userData?.email?.split("@")[0] || 
                       `User ${userData?.id || ''}`;
   const displayRole = isSuperAdmin ? "Super Admin" : "Employee";
