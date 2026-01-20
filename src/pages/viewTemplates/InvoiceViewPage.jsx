@@ -4,6 +4,7 @@ import InvoiceApi from "../../Api/invoice.api";
 import { useParams, useNavigate } from "react-router-dom";
 
 export default function InvoiceViewPage() {
+  // State variables
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,6 +14,7 @@ export default function InvoiceViewPage() {
   const navigate = useNavigate();
   const invoiceId = invoiceNumber;
 
+// Constants
   const LOGO_URL = "/novotel_logo.png";
   const STAMP_URL = "/novotel_stemp.png";
   const ROWS_PER_PAGE = 24;
