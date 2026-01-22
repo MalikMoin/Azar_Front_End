@@ -1,4 +1,5 @@
 import { Input } from "./index.js";
+import { useState, useEffect } from "react";
 
 const CityTaxSection = ({ formData, handleInputChange }) => {
   const labelClass =
@@ -15,25 +16,43 @@ const CityTaxSection = ({ formData, handleInputChange }) => {
   // Default to 1 if sum is 0 to ensure the user sees a valid calculation example
   const persons = paxAdult + paxChild || 1;
 
-  // Handle cityTaxAmount carefully
-  const rawCityTaxAmount = formData.cityTaxAmount;
-  let cityTaxAmount = "";
-  let parsedCityTaxAmount = 0;
+  // State for per-person input (allows empty string)
+  const [perPersonInput, setPerPersonInput] = useState("");
 
-  if (
-    rawCityTaxAmount !== "" &&
-    rawCityTaxAmount !== null &&
-    rawCityTaxAmount !== undefined
-  ) {
-    parsedCityTaxAmount = parseFloat(rawCityTaxAmount) || 0;
-    cityTaxAmount = rawCityTaxAmount;
-  }
+  // Initialize perPersonInput from cityTaxAmount when component mounts
+  useEffect(() => {
+    if (formData.cityTaxAmount) {
+      const parsedAmount = parseFloat(formData.cityTaxAmount);
+      if (!isNaN(parsedAmount) && persons > 0) {
+        // Calculate per-person rate from stored total-per-day
+        const perPersonRate = parsedAmount / persons;
+        setPerPersonInput(perPersonRate.toString());
+      }
+    }
+  }, []);
 
-  // 2. Calculate Total: Nights * Persons * Amount
-  const cityTaxTotal =
-    cityTaxRows > 0 && parsedCityTaxAmount > 0
-      ? cityTaxRows * persons * parsedCityTaxAmount
-      : 0;
+  // Calculate per-day total (persons × per-person rate)
+  const perPersonRate = parseFloat(perPersonInput) || 0;
+  const perDayTotal = perPersonRate * persons;
+
+  // Total for all nights
+  const cityTaxTotal = cityTaxRows > 0 ? perDayTotal * cityTaxRows : 0;
+
+  // Handle input change - store per-day total in formData
+  const handlePerPersonChange = (value) => {
+    setPerPersonInput(value);
+
+    const perPerson = parseFloat(value) || 0;
+    const perDayTotalToStore = perPerson * persons;
+
+    // Store the per-day total (persons × per-person rate) in formData.cityTaxAmount
+    handleInputChange({
+      target: {
+        name: "cityTaxAmount",
+        value: perDayTotalToStore > 0 ? perDayTotalToStore.toString() : "",
+      },
+    });
+  };
 
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
@@ -80,37 +99,40 @@ const CityTaxSection = ({ formData, handleInputChange }) => {
           </p>
         </div>
 
-        {/* Amount Per Person Per Night */}
+        {/* Amount Per Person Per Night - USER ENTERS THIS */}
         <div className="form-control">
           <label className={labelClass}>Tax Per Person/Night</label>
           <div className="relative">
             <Input
               type="number"
-              name="cityTaxAmount"
-              value={cityTaxAmount}
+              name="cityTaxPerPerson"
+              value={perPersonInput}
               onChange={(e) => {
                 const value = e.target.value;
-                handleInputChange({
-                  target: {
-                    name: "cityTaxAmount",
-                    value: value,
-                  },
-                });
+                handlePerPersonChange(value);
               }}
               placeholder="Enter amount"
               min="0"
+              step="0.01"
               className="pr-10"
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
               TND
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Rate applied per person</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Rate per person per night
+            {perPersonRate > 0 && perDayTotal > 0 && (
+              <span className="ml-1 font-medium">
+                (Per day total: {perDayTotal.toFixed(2)} TND)
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
       {/* City Tax Details Table - Only show when we have valid data */}
-      {cityTaxRows > 0 && parsedCityTaxAmount > 0 && (
+      {cityTaxRows > 0 && perPersonRate > 0 && (
         <div className="mt-6">
           <div className="flex justify-between items-center mb-3">
             <h4 className="text-sm font-semibold text-slate-700">
@@ -157,13 +179,12 @@ const CityTaxSection = ({ formData, handleInputChange }) => {
                     <td className="p-3 text-slate-600 border-r border-slate-100">
                       {detail.description || `City Tax - Night ${index + 1}`}
                     </td>
-                    {/* NEW COLUMN: Persons Count */}
                     <td className="p-3 text-center text-slate-600 border-r border-slate-100">
                       {persons}
                     </td>
-                    {/* UPDATED COLUMN: (Rate * Persons) */}
+                    {/* Per day total (persons × per-person rate) */}
                     <td className="p-3 text-right font-medium text-slate-700">
-                      {(parsedCityTaxAmount * persons).toLocaleString("en-US", {
+                      {perDayTotal.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -209,9 +230,7 @@ const CityTaxSection = ({ formData, handleInputChange }) => {
                 City Tax Summary
               </p>
               <p className="text-xs text-slate-500">
-                {cityTaxRows} night{cityTaxRows !== 1 ? "s" : ""} × {persons}{" "}
-                person{persons !== 1 ? "s" : ""} ×{" "}
-                {parsedCityTaxAmount.toFixed(2)}
+                {perPersonRate.toFixed(2)} TND × {persons} person{persons !== 1 ? "s" : ""} × {cityTaxRows} night{cityTaxRows !== 1 ? "s" : ""}
               </p>
             </div>
             <div className="text-right">
